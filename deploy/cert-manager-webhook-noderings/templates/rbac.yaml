@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+---
+# Read the API server's requestheader CA (extension API server authentication).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:webhook-authentication-reader
+  namespace: kube-system
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "nrwebhook.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Delegate authentication and authorization decisions to the core API server.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:auth-delegator
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "nrwebhook.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# The extension API server library watches API priority and fairness objects.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:flowcontrol
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [flowcontrol.apiserver.k8s.io]
+    resources: [prioritylevelconfigurations, flowschemas]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:flowcontrol
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "nrwebhook.fullname" . }}:flowcontrol
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "nrwebhook.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Let cert-manager call the solver.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:domain-solver
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [{{ .Values.groupName | quote }}]
+    resources: ["*"]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:domain-solver
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "nrwebhook.fullname" . }}:domain-solver
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.certManager.serviceAccountName }}
+    namespace: {{ .Values.certManager.namespace }}
+---
+# Let the solver read the NodeRings token Secret named in an Issuer.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:secret-reader
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get]
+    {{- with .Values.secretAccess.secretNames }}
+    resourceNames: {{- toYaml . | nindent 6 }}
+    {{- end }}
+{{- if .Values.secretAccess.allNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}:secret-reader
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "nrwebhook.fullname" . }}:secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "nrwebhook.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- else }}
+{{- range (.Values.secretAccess.namespaces | default (list .Values.certManager.namespace)) }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "nrwebhook.fullname" $ }}:secret-reader
+  namespace: {{ . | quote }}
+  labels: {{- include "nrwebhook.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "nrwebhook.fullname" $ }}:secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "nrwebhook.fullname" $ }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
+{{- end }}

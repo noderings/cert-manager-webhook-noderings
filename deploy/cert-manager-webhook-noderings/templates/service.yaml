@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: https
+      protocol: TCP
+      name: https
+  selector: {{- include "nrwebhook.selectorLabels" . | nindent 4 }}

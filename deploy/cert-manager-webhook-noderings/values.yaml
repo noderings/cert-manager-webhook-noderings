@@ -1,0 +1,67 @@
+# API group of the solver. Issuers refer to it as `webhook.groupName`.
+# Change it only if you run two copies of this webhook in one cluster.
+groupName: acme.noderings.com
+
+certManager:
+  # Namespace and service account of cert-manager, which calls the solver.
+  namespace: cert-manager
+  serviceAccountName: cert-manager
+
+# Where the solver may read the NodeRings token Secret that an Issuer names in
+# `tokenSecretRef`. ClusterIssuers read Secrets from cert-manager's cluster
+# resource namespace (certManager.namespace by default); namespaced Issuers
+# read from their own namespace.
+secretAccess:
+  # Namespaces to allow. Empty means certManager.namespace only.
+  namespaces: []
+  # Allow reading Secrets in every namespace (for Issuers in many namespaces).
+  allNamespaces: false
+  # Restrict reads to these Secret names. Empty allows any Secret in the allowed namespaces.
+  secretNames: [noderings-token]
+
+# Optional default token, used only by ClusterIssuers whose config has no
+# tokenSecretRef (cert-manager passes "ambient credentials" to ClusterIssuers only).
+ambientCredentials:
+  secretName: ""
+  secretKey: token
+  organizationId: ""
+
+image:
+  repository: ghcr.io/noderings/cert-manager-webhook-noderings
+  # Defaults to the chart's appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 443
+
+# Port the solver listens on inside the pod.
+securePort: 4443
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

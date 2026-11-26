@@ -1,0 +1,19 @@
+The NodeRings DNS-01 solver is installed as {{ .Values.groupName }}.
+
+1. Store a NodeRings service account token (DNS permissions are enough):
+
+   kubectl -n {{ .Values.certManager.namespace }} create secret generic noderings-token --from-literal=token=<TOKEN>
+
+2. Use it in a ClusterIssuer:
+
+   solvers:
+     - dns01:
+         webhook:
+           groupName: {{ .Values.groupName }}
+           solverName: noderings
+           config:
+             tokenSecretRef:
+               name: noderings-token
+               key: token
+
+See https://github.com/noderings/cert-manager-webhook-noderings for Issuers in other namespaces.

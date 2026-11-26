@@ -1,0 +1,17 @@
+apiVersion: v2
+name: cert-manager-webhook-noderings
+description: cert-manager ACME DNS-01 solver for NodeRings DNS
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.27.0-0"
+home: https://github.com/noderings/cert-manager-webhook-noderings
+sources:
+  - https://github.com/noderings/cert-manager-webhook-noderings
+icon: https://noderings.com/favicon.png
+keywords: [cert-manager, acme, dns01, letsencrypt, noderings]
+maintainers:
+  - name: NodeRings
+    url: https://noderings.com
+annotations:
+  artifacthub.io/license: Apache-2.0

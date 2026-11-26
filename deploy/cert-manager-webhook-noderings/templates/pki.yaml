@@ -1,0 +1,49 @@
+# A private CA, made by cert-manager, signs the solver's serving certificate.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "nrwebhook.selfSignedIssuer" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "nrwebhook.rootCACertificate" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "nrwebhook.rootCACertificate" . }}
+  duration: 43800h # 5y
+  issuerRef:
+    name: {{ include "nrwebhook.selfSignedIssuer" . }}
+  commonName: "ca.{{ include "nrwebhook.fullname" . }}.cert-manager"
+  isCA: true
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "nrwebhook.rootCAIssuer" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+spec:
+  ca:
+    secretName: {{ include "nrwebhook.rootCACertificate" . }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "nrwebhook.servingCertificate" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "nrwebhook.servingCertificate" . }}
+  duration: 8760h # 1y
+  issuerRef:
+    name: {{ include "nrwebhook.rootCAIssuer" . }}
+  dnsNames:
+    - {{ include "nrwebhook.fullname" . }}
+    - {{ include "nrwebhook.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "nrwebhook.fullname" . }}.{{ .Release.Namespace }}.svc

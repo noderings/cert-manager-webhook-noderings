@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "nrwebhook.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "nrwebhook.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "nrwebhook.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "nrwebhook.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "nrwebhook.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: webhook
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --secure-port={{ .Values.securePort }}
+            - --tls-cert-file=/tls/tls.crt
+            - --tls-private-key-file=/tls/tls.key
+          env:
+            - name: GROUP_NAME
+              value: {{ .Values.groupName | quote }}
+            {{- with .Values.ambientCredentials }}
+            {{- if .secretName }}
+            - name: NODERINGS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName | quote }}
+                  key: {{ .secretKey | quote }}
+            {{- end }}
+            {{- if .organizationId }}
+            - name: NODERINGS_ORGANIZATION_ID
+              value: {{ .organizationId | quote }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - name: https
+              containerPort: {{ .Values.securePort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet: {scheme: HTTPS, path: /livez, port: https}
+          readinessProbe:
+            httpGet: {scheme: HTTPS, path: /readyz, port: https}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: certs
+              mountPath: /tls
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: certs
+          secret:
+            secretName: {{ include "nrwebhook.servingCertificate" . }}
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
