@@ -168,6 +168,7 @@ fixes there should land in both repositories.
 
 - [external-dns-noderings-webhook](https://github.com/noderings/external-dns-noderings-webhook):
   DNS records for your Ingresses and Services in the same zones.
+- [Go SDK](https://github.com/noderings/noderings-go): official Go client for the NodeRings API.
 
 ## License
 
