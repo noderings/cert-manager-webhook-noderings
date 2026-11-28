@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please do not open a public issue for security problems. Email **partners@noderings.com** with:
+Please do not open a public issue for security problems. Email **support@noderings.com** (the contact in [security.txt](https://noderings.com/.well-known/security.txt)) with:
 
 - a description of the issue and its impact
 - steps to reproduce, or a proof of concept
