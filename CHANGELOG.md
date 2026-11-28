@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file. The format foll
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1](https://github.com/noderings/cert-manager-webhook-noderings/compare/v0.1.0...v0.1.1) (2026-11-28)
+
+
+### Documentation
+
+* link the official Go SDK in the README ([#4](https://github.com/noderings/cert-manager-webhook-noderings/issues/4)) ([754859c](https://github.com/noderings/cert-manager-webhook-noderings/commit/754859cbcff2d30d7f9ce0c182c77cbab44e397e))
+* use the security.txt contact in SECURITY.md ([#6](https://github.com/noderings/cert-manager-webhook-noderings/issues/6)) ([4282f2e](https://github.com/noderings/cert-manager-webhook-noderings/commit/4282f2ee2b183aadae756f8756b6987446ba94a3))
+
 ## [Unreleased]
 
 ## [0.1.0] - 2026-11-26
